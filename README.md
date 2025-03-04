@@ -30,7 +30,7 @@ Run the script with the required parameters:
 
 ## Features
 - The script requires the URL and API key as mandatory parameters.
-- The domain ID is set to `1` by default (modify if necessary).
+- The domain ID is set to `5` by default (modify if necessary).
 - You can add additional optional parameters, for example:
   ```sh
   ./urlshortener.sh -url https://www.demourl.com/ -apikey YOUR_API_KEY -alias mylink -privacy 1 -expdate 2023-12-31
@@ -41,7 +41,7 @@ Run the script with the required parameters:
 |----------------------|-------------|
 | `-url` or `--url`   | The URL to be shortened (required) |
 | `-apikey` or `--apikey` | Your API key (required) |
-| `-domain` or `--domain` | Domain ID (default: `1`) |
+| `-domain` or `--domain` | Domain ID (default: `5`) |
 | `-alias` or `--alias` | Custom link alias |
 | `-password` or `--password` | Password for the shortened link |
 | `-space` or `--space` | Space ID |
@@ -56,3 +56,5 @@ Run the script with the required parameters:
 ## Output
 The shortened URL is directly displayed in the command line.
 
+## Get an API Key
+To use this script, you need an API key from the [4or.de URL Shortener](https://4or.de/). You can register for an account [here](https://4or.de/register).
