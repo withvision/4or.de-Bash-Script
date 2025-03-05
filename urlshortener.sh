@@ -48,7 +48,7 @@ show_help() {
   echo "  -v, --verbose               Ausführliche Ausgabe (für Fehlersuche)"
   echo ""
   echo "URL-Optionen:"
-  echo "  -d, --domain ID             Domain-ID (Standard: 5)"
+  echo "  -d, --domain ID             Domain-ID (Standard: 1)"
   echo "  -a, --alias TEXT            Eigener Link-Alias"
   echo "  -p, --password TEXT         Link-Passwort"
   echo "  -s, --space ID              Space-ID"
