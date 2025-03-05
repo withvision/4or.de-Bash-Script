@@ -56,7 +56,7 @@ Example with additional options:
 | `--clipboard` | `-c` | Copy the shortened URL to clipboard |
 | `--quiet` | `-q` | Output only the URL, no other messages |
 | `--verbose` | `-v` | Detailed output (for debugging) |
-| `--domain` | `-d` | Domain ID (default: `5`) |
+| `--domain` | `-d` | Domain ID (default: `1`) |
 | `--alias` | `-a` | Custom link alias |
 | `--password` | `-p` | Password for the shortened link |
 | `--space` | `-s` | Space ID |
