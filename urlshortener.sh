@@ -1,12 +1,19 @@
 #!/bin/bash
 
 # URL Shortener Script für 4or.de API
-# Verwendung: ./urlshortener.sh -url https://www.beispiel.de/ -apikey DEIN_API_KEY [weitere Optionen]
+# Verwendung: ./urlshortener.sh -u https://www.beispiel.de/ -k DEIN_API_KEY [weitere Optionen]
+
+# Farben für Ausgaben
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # Default Werte
 URL=""
-API_KEY=""
-DOMAIN_ID=5  # Standardwert für domain_id
+API_KEY=""   # Bei bedarf einfach hier den API Key hinterlegen
+DOMAIN_ID=1  # Standardwert für domain_id
 ALIAS=""
 PASSWORD=""
 SPACE_ID=""
@@ -19,91 +26,153 @@ EXPIRATION_DATE=""
 EXPIRATION_TIME=""
 EXPIRATION_CLICKS=""
 TARGET_TYPE=0
+SHOW_HELP=false
+COPY_TO_CLIPBOARD=false
+QUIET_MODE=false
+VERBOSE_MODE=false
+
+# Hilfefunktion
+show_help() {
+  echo -e "${BLUE}URL Shortener für 4or.de${NC}"
+  echo ""
+  echo "Verwendung: $0 [optionen]"
+  echo ""
+  echo "Erforderliche Optionen:"
+  echo "  -u, --url URL               Die zu verkürzende URL"
+  echo "  -k, --apikey KEY            Dein API-Key"
+  echo ""
+  echo "Allgemeine Optionen:"
+  echo "  -h, --help                  Zeigt diese Hilfe an"
+  echo "  -c, --clipboard             Kopiert die verkürzte URL in die Zwischenablage"
+  echo "  -q, --quiet                 Nur die URL ausgeben, keine weiteren Meldungen"
+  echo "  -v, --verbose               Ausführliche Ausgabe (für Fehlersuche)"
+  echo ""
+  echo "URL-Optionen:"
+  echo "  -d, --domain ID             Domain-ID (Standard: 5)"
+  echo "  -a, --alias TEXT            Eigener Link-Alias"
+  echo "  -p, --password TEXT         Link-Passwort"
+  echo "  -s, --space ID              Space-ID"
+  echo "  --disabled 0|1              Link deaktivieren (0=aktiv, 1=deaktiviert)"
+  echo "  --privacy 0|1|2             Datenschutzeinstellung (0=öffentlich, 1=privat, 2=passwort)"
+  echo "  --privacy-password TEXT     Passwort für Statistikseite"
+  echo "  --exp-url URL               Weiterleitungs-URL nach Ablauf"
+  echo "  --exp-date YYYY-MM-DD       Ablaufdatum"
+  echo "  --exp-time HH:MM            Ablaufzeit"
+  echo "  --exp-clicks N              Maximale Anzahl an Klicks"
+  echo ""
+  echo "Beispiel:"
+  echo "  $0 -u https://www.beispiel.de/ -k DEIN_API_KEY -a meinlink"
+  exit 0
+}
 
 # Parameter parsen
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-    -url|--url)
+    -u|--url)
       URL="$2"
       shift
       shift
       ;;
-    -apikey|--apikey)
+    -k|--apikey)
       API_KEY="$2"
       shift
       shift
       ;;
-    -domain|--domain)
+    -d|--domain)
       DOMAIN_ID="$2"
       shift
       shift
       ;;
-    -alias|--alias)
+    -a|--alias)
       ALIAS="$2"
       shift
       shift
       ;;
-    -password|--password)
+    -p|--password)
       PASSWORD="$2"
       shift
       shift
       ;;
-    -space|--space)
+    -s|--space)
       SPACE_ID="$2"
       shift
       shift
       ;;
-    -disabled|--disabled)
+    --disabled)
       DISABLED="$2"
       shift
       shift
       ;;
-    -privacy|--privacy)
+    --privacy)
       PRIVACY="$2"
       shift
       shift
       ;;
-    -privacypass|--privacy-password)
+    --privacy-password)
       PRIVACY_PASSWORD="$2"
       shift
       shift
       ;;
-    -expurl|--expiration-url)
+    --exp-url)
       EXPIRATION_URL="$2"
       shift
       shift
       ;;
-    -expdate|--expiration-date)
+    --exp-date)
       EXPIRATION_DATE="$2"
       shift
       shift
       ;;
-    -exptime|--expiration-time)
+    --exp-time)
       EXPIRATION_TIME="$2"
       shift
       shift
       ;;
-    -expclicks|--expiration-clicks)
+    --exp-clicks)
       EXPIRATION_CLICKS="$2"
       shift
       shift
       ;;
+    -c|--clipboard)
+      COPY_TO_CLIPBOARD=true
+      shift
+      ;;
+    -q|--quiet)
+      QUIET_MODE=true
+      shift
+      ;;
+    -v|--verbose)
+      VERBOSE_MODE=true
+      shift
+      ;;
+    -h|--help)
+      SHOW_HELP=true
+      shift
+      ;;
     *)
-      echo "Unbekannter Parameter: $1"
+      echo -e "${RED}Fehler: Unbekannter Parameter: $1${NC}"
+      echo "Verwende '$0 --help' für eine Liste der verfügbaren Optionen."
       exit 1
       ;;
   esac
 done
 
+# Zeige Hilfe, wenn angefordert
+if [ "$SHOW_HELP" = true ]; then
+  show_help
+fi
+
 # Prüfen ob erforderliche Parameter vorhanden sind
 if [ -z "$URL" ]; then
-  echo "Fehler: URL ist erforderlich (-url parameter)"
+  echo -e "${RED}Fehler: URL ist erforderlich (-u, --url)${NC}"
+  echo "Verwende '$0 --help' für eine Liste der verfügbaren Optionen."
   exit 1
 fi
 
 if [ -z "$API_KEY" ]; then
-  echo "Fehler: API-Key ist erforderlich (-apikey parameter)"
+  echo -e "${RED}Fehler: API-Key ist erforderlich (-k, --apikey)${NC}"
+  echo "Verwende '$0 --help' für eine Liste der verfügbaren Optionen."
   exit 1
 fi
 
@@ -131,20 +200,29 @@ if [ ! -z "$EXPIRATION_CLICKS" ]; then CURL_CMD="$CURL_CMD --data-urlencode 'exp
 if [ ! -z "$TARGET_TYPE" ]; then CURL_CMD="$CURL_CMD --data-urlencode 'target_type=$TARGET_TYPE'"; fi
 
 # Für Debug-Zwecke
-# echo "$CURL_CMD"
+if [ "$VERBOSE_MODE" = true ]; then
+  echo -e "${YELLOW}Ausführen des Befehls:${NC}"
+  echo "$CURL_CMD"
+fi
+
+# Zeige Fortschritt an, außer im Quiet-Modus
+if [ "$QUIET_MODE" = false ] && [ "$VERBOSE_MODE" = false ]; then
+  echo -e "${YELLOW}Verkürze URL...${NC}"
+fi
 
 # Sende die Anfrage
 RESPONSE=$(eval $CURL_CMD)
 
 # Prüfe auf Fehler im Response
 if echo "$RESPONSE" | grep -q "error\|message"; then
-  echo "Fehler bei der API-Anfrage:"
-  echo "$RESPONSE"
+  if [ "$QUIET_MODE" = false ]; then
+    echo -e "${RED}Fehler bei der API-Anfrage:${NC}"
+    echo "$RESPONSE"
+  fi
   exit 1
 fi
 
-# Extrahiere und zeige die verkürzte URL an
-# Da das Format sich geändert hat, müssen wir nach "short_url" statt "shortUrl" suchen
+# Extrahiere die verkürzte URL
 SHORT_URL=$(echo "$RESPONSE" | grep -o '"short_url":"[^"]*"' | cut -d'"' -f4)
 
 if [ -z "$SHORT_URL" ]; then
@@ -152,10 +230,50 @@ if [ -z "$SHORT_URL" ]; then
   SHORT_URL=$(echo "$RESPONSE" | grep -o '"shortUrl":"[^"]*"' | cut -d'"' -f4)
   
   if [ -z "$SHORT_URL" ]; then
-    echo "Konnte keine verkürzte URL aus der Antwort extrahieren."
+    if [ "$QUIET_MODE" = false ]; then
+      echo -e "${RED}Konnte keine verkürzte URL aus der Antwort extrahieren.${NC}"
+      if [ "$VERBOSE_MODE" = true ]; then
+        echo "Antwort:"
+        echo "$RESPONSE"
+      fi
+    fi
     exit 1
   fi
 fi
 
 # Entferne Escape-Zeichen aus der URL (wie \/ zu /)
-echo "$SHORT_URL" | sed 's/\\//g'
+SHORT_URL=$(echo "$SHORT_URL" | sed 's/\\//g')
+
+# Ausgabe der URL
+if [ "$QUIET_MODE" = false ]; then
+  echo -e "${GREEN}Verkürzte URL:${NC} $SHORT_URL"
+else
+  echo "$SHORT_URL"
+fi
+
+# In die Zwischenablage kopieren, wenn gewünscht
+if [ "$COPY_TO_CLIPBOARD" = true ]; then
+  # Prüfe, ob eines der Clipboard-Befehle verfügbar ist
+  if command -v xclip &> /dev/null; then
+    echo -n "$SHORT_URL" | xclip -selection clipboard
+    if [ "$QUIET_MODE" = false ]; then
+      echo -e "${BLUE}URL wurde in die Zwischenablage kopiert (xclip).${NC}"
+    fi
+  elif command -v xsel &> /dev/null; then
+    echo -n "$SHORT_URL" | xsel -ib
+    if [ "$QUIET_MODE" = false ]; then
+      echo -e "${BLUE}URL wurde in die Zwischenablage kopiert (xsel).${NC}"
+    fi
+  elif command -v pbcopy &> /dev/null; then
+    echo -n "$SHORT_URL" | pbcopy
+    if [ "$QUIET_MODE" = false ]; then
+      echo -e "${BLUE}URL wurde in die Zwischenablage kopiert (pbcopy).${NC}"
+    fi
+  else
+    if [ "$QUIET_MODE" = false ]; then
+      echo -e "${YELLOW}Warnung: Konnte URL nicht in Zwischenablage kopieren. Installiere xclip, xsel oder pbcopy.${NC}"
+    fi
+  fi
+fi
+
+exit 0
